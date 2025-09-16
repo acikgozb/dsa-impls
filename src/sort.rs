@@ -37,7 +37,7 @@ pub enum Order {
 /// ```
 pub fn selection_sort<T>(s: &[T], order: Order) -> Vec<&T>
 where
-    T: Ord + std::fmt::Debug,
+    T: Ord,
 {
     let mut vec: Vec<&T> = Vec::with_capacity(s.len());
     let mut sorted_idxs: Vec<bool> = vec![false; s.len()];
