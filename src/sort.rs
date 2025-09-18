@@ -3,6 +3,7 @@
 /// This enum is currently supported in the sort algorithms below:
 ///
 /// - Selection sort
+/// - Quicksort
 pub enum Order {
     Asc,
     Desc,
@@ -10,7 +11,7 @@ pub enum Order {
 
 /// Sorts a slice `s` using selection sort, ordered by the given `Order`.
 ///
-/// If there are any duplicate items, they will be put next to each other.
+/// If there are any duplicate items in `s`, they will be put next to each other.
 ///
 /// # Examples
 ///
@@ -71,6 +72,61 @@ where
     vec
 }
 
+/// Sorts a slice `s` using quicksort, ordered by the given `Order`.
+///
+/// If there are any duplicate items in `s`, they will be put next to each other.
+///
+/// # Examples
+///
+/// Ascending sort, without any duplicates.
+///
+/// ```no_run
+///    let items = [1, 5, 3, 2, 4];
+///    let mut sorted = quicksort(&items[..], Order::Asc).into_iter();
+///
+///    for item in [1, 2, 3, 4, 5] {
+///        assert_eq!(sorted.next().unwrap(), item);
+///    }
+/// ```
+///
+/// Descending sort with duplicates.
+///
+/// ```no_run
+///     let items = [1, 5, 3, 2, 2, 4];
+///     let mut sorted = quicksort(&items[..], Order::Desc).into_iter();
+///
+///     for item in [5, 4, 3, 2, 2, 1] {
+///         assert_eq!(sorted.next().unwrap(), item);
+///     }
+/// ```
+pub fn quicksort<T>(s: &[T], order: &Order) -> Vec<T>
+where
+    T: Ord + Copy,
+{
+    let s = s.to_owned();
+    match s.len() {
+        l if l < 2 => s,
+        _ => {
+            let pivot = s[0];
+            let (lower, higher): (Vec<_>, Vec<_>) =
+                s.into_iter().skip(1).partition(|i| *i <= pivot);
+
+            match order {
+                Order::Desc => quicksort(&higher, order)
+                    .into_iter()
+                    .chain([pivot])
+                    .chain(quicksort(&lower, order))
+                    .collect(),
+                Order::Asc => quicksort(&lower, order)
+                    .into_iter()
+                    .chain([pivot])
+                    .chain(quicksort(&higher, order))
+                    .collect(),
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 pub mod selection_sort_tests {
     use super::{Order, selection_sort};
@@ -112,6 +168,50 @@ pub mod selection_sort_tests {
 
         for item in [5, 4, 3, 2, 2, 1] {
             assert_eq!(*(sorted.next().unwrap()), item);
+        }
+    }
+}
+#[cfg(test)]
+pub mod quicksort_tests {
+    use super::{Order, quicksort};
+
+    #[test]
+    pub fn should_sort_ascending() {
+        let items = [1, 5, 3, 2, 4];
+        let mut sorted = quicksort(&items[..], &Order::Asc).into_iter();
+
+        for item in [1, 2, 3, 4, 5] {
+            assert_eq!(sorted.next().unwrap(), item);
+        }
+    }
+
+    #[test]
+    pub fn should_sort_ascending_with_dups() {
+        let items = [1, 5, 3, 2, 2, 4];
+        let mut sorted = quicksort(&items[..], &Order::Asc).into_iter();
+
+        for item in [1, 2, 2, 3, 4, 5] {
+            assert_eq!(sorted.next().unwrap(), item);
+        }
+    }
+
+    #[test]
+    pub fn should_sort_descending() {
+        let items = [1, 5, 3, 2, 4];
+        let mut sorted = quicksort(&items[..], &Order::Desc).into_iter();
+
+        for item in [5, 4, 3, 2, 1] {
+            assert_eq!(sorted.next().unwrap(), item);
+        }
+    }
+
+    #[test]
+    pub fn should_sort_descending_with_dups() {
+        let items = [1, 5, 3, 2, 2, 4];
+        let mut sorted = quicksort(&items[..], &Order::Desc).into_iter();
+
+        for item in [5, 4, 3, 2, 2, 1] {
+            assert_eq!(sorted.next().unwrap(), item);
         }
     }
 }
