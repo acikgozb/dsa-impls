@@ -18,23 +18,27 @@ pub enum Order {
 /// Ascending sort, without any duplicates.
 ///
 /// ```no_run
-///    let items = [1, 5, 3, 2, 4];
-///    let mut sorted = selection_sort(&items[..], Order::Asc).into_iter();
+/// use dsa_impls::sort::{selection_sort, Order};
 ///
-///    for item in [1, 2, 3, 4, 5] {
-///        assert_eq!(*(sorted.next().unwrap()), item);
-///    }
+/// let items = [1, 5, 3, 2, 4];
+/// let mut sorted = selection_sort(&items[..], Order::Asc).into_iter();
+///
+/// for item in [1, 2, 3, 4, 5] {
+///     assert_eq!(*(sorted.next().unwrap()), item);
+/// }
 /// ```
 ///
 /// Descending sort with duplicates.
 ///
 /// ```no_run
-///     let items = [1, 5, 3, 2, 2, 4];
-///     let mut sorted = selection_sort(&items[..], Order::Desc).into_iter();
+/// use dsa_impls::sort::{selection_sort, Order};
 ///
-///     for item in [5, 4, 3, 2, 2, 1] {
-///         assert_eq!(*(sorted.next().unwrap()), item);
-///     }
+/// let items = [1, 5, 3, 2, 2, 4];
+/// let mut sorted = selection_sort(&items[..], Order::Desc).into_iter();
+///
+/// for item in [5, 4, 3, 2, 2, 1] {
+///     assert_eq!(*(sorted.next().unwrap()), item);
+/// }
 /// ```
 pub fn selection_sort<T>(s: &[T], order: Order) -> Vec<&T>
 where
@@ -81,23 +85,27 @@ where
 /// Ascending sort, without any duplicates.
 ///
 /// ```no_run
-///    let items = [1, 5, 3, 2, 4];
-///    let mut sorted = quicksort(&items[..], Order::Asc).into_iter();
+/// use dsa_impls::sort::{quicksort, Order};
 ///
-///    for item in [1, 2, 3, 4, 5] {
-///        assert_eq!(sorted.next().unwrap(), item);
-///    }
+/// let items = [1, 5, 3, 2, 4];
+/// let mut sorted = quicksort(&items[..], &Order::Asc).into_iter();
+///
+/// for item in [1, 2, 3, 4, 5] {
+///     assert_eq!(sorted.next().unwrap(), item);
+/// }
 /// ```
 ///
 /// Descending sort with duplicates.
 ///
 /// ```no_run
-///     let items = [1, 5, 3, 2, 2, 4];
-///     let mut sorted = quicksort(&items[..], Order::Desc).into_iter();
+/// use dsa_impls::sort::{quicksort, Order};
 ///
-///     for item in [5, 4, 3, 2, 2, 1] {
-///         assert_eq!(sorted.next().unwrap(), item);
-///     }
+/// let items = [1, 5, 3, 2, 2, 4];
+/// let mut sorted = quicksort(&items[..], &Order::Desc).into_iter();
+///
+/// for item in [5, 4, 3, 2, 2, 1] {
+///     assert_eq!(sorted.next().unwrap(), item);
+/// }
 /// ```
 pub fn quicksort<T>(s: &[T], order: &Order) -> Vec<T>
 where

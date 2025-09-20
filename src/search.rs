@@ -11,6 +11,8 @@ use std::{
 /// # Examples
 ///
 /// ```no_run
+/// use dsa_impls::search::bsearch;
+///
 /// let vec: Vec<u8> = (1..=125).collect();
 /// let mut item = 88;
 /// let idx = bsearch(&vec, &item);
@@ -19,7 +21,7 @@ use std::{
 /// assert_eq!(vec[idx.unwrap()], item);
 ///
 /// item = 150;
-/// let idx = bsearch(&vec, item);
+/// let idx = bsearch(&vec, &item);
 /// assert!(idx.is_none());
 /// ```
 pub fn bsearch<T>(slice: &[T], item: &T) -> Option<usize>
