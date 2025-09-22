@@ -20,18 +20,6 @@ impl<'a, T> LinkedList<'a, T> {
         }
     }
 
-    pub fn end(&self) -> Option<&T> {
-        let end = self.end?;
-        // SAFETY:
-        // Since the end `Node` is wrapped with `Option`, `Some` always
-        // contains a valid `Node`.
-        // `.data` does not try to read from uninitialized memory, making this
-        // operation safe to execute.
-        Some(unsafe { (end.as_ref()).data })
-    }
-}
-
-impl<'a, T> LinkedList<'a, T> {
     pub fn push_end(&mut self, data: &'a T) {
         let node = Box::new(Node { data, next: None });
         let ptr = NonNull::from(Box::leak(node));
@@ -52,6 +40,41 @@ impl<'a, T> LinkedList<'a, T> {
         };
 
         self.end = Some(ptr);
+    }
+
+    pub fn push_start(&mut self, data: &'a T) {
+        let node = Box::new(Node {
+            data,
+            next: self.start,
+        });
+        let new_start = NonNull::from(Box::leak(node));
+
+        self.start = Some(new_start);
+
+        if self.end.is_none() {
+            self.end = Some(new_start);
+        }
+    }
+
+    pub fn end(&self) -> Option<&T> {
+        let end = self.end?;
+        // SAFETY:
+        // Since the end `Node` is wrapped with `Option`, `Some` always
+        // contains a valid `Node`.
+        // `.data` does not try to read from uninitialized memory, making this
+        // operation safe to execute.
+        Some(unsafe { (end.as_ref()).data })
+    }
+
+    pub fn start(&self) -> Option<&T> {
+        let start = self.start?;
+
+        // SAFETY:
+        // Since the start `Node` is wrapped with `Option`, `Some` always
+        // contains a valid `Node`. This is satisfied by the insertion methods.
+        // `.data` does not try to read from uninitialized memory, making this
+        // operation safe to execute.
+        Some(unsafe { (start.as_ref()).data })
     }
 }
 
@@ -100,7 +123,26 @@ mod tests {
         list.push_end(&i2);
         list.push_end(&i3);
 
-        let last_item = list.end();
-        assert_eq!(last_item.unwrap(), &i3);
+        let start = list.start();
+        let end = list.end();
+        assert_eq!(start.unwrap(), &i1);
+        assert_eq!(end.unwrap(), &i3);
+    }
+
+    #[test]
+    pub fn should_push_start() {
+        let i1 = 5;
+        let i2 = 10;
+        let i3 = 15;
+
+        let mut list: LinkedList<u8> = LinkedList::new();
+        list.push_start(&i1);
+        list.push_start(&i2);
+        list.push_start(&i3);
+
+        let start = list.start();
+        let end = list.end();
+        assert_eq!(start.unwrap(), &i3);
+        assert_eq!(end.unwrap(), &i1);
     }
 }
