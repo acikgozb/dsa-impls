@@ -1,18 +1,18 @@
 use std::ptr::NonNull;
 
 #[derive(Debug)]
-struct Node<'a, T> {
-    data: &'a T,
-    next: Option<NonNull<Node<'a, T>>>,
+struct Node<T> {
+    data: T,
+    next: Option<NonNull<Node<T>>>,
 }
 
 #[derive(Default, Debug)]
-pub struct LinkedList<'a, T> {
-    start: Option<NonNull<Node<'a, T>>>,
-    end: Option<NonNull<Node<'a, T>>>,
+pub struct LinkedList<T> {
+    start: Option<NonNull<Node<T>>>,
+    end: Option<NonNull<Node<T>>>,
 }
 
-impl<'a, T> LinkedList<'a, T> {
+impl<T> LinkedList<T> {
     pub fn new() -> Self {
         Self {
             start: None,
@@ -20,7 +20,7 @@ impl<'a, T> LinkedList<'a, T> {
         }
     }
 
-    pub fn push_end(&mut self, data: &'a T) {
+    pub fn push_end(&mut self, data: T) {
         let node = Box::new(Node { data, next: None });
         let ptr = NonNull::from(Box::leak(node));
 
@@ -42,7 +42,7 @@ impl<'a, T> LinkedList<'a, T> {
         self.end = Some(ptr);
     }
 
-    pub fn push_start(&mut self, data: &'a T) {
+    pub fn push_start(&mut self, data: T) {
         let node = Box::new(Node {
             data,
             next: self.start,
@@ -63,7 +63,7 @@ impl<'a, T> LinkedList<'a, T> {
         // contains a valid `Node`.
         // `.data` does not try to read from uninitialized memory, making this
         // operation safe to execute.
-        Some(unsafe { (end.as_ref()).data })
+        Some(unsafe { &(end.as_ref()).data })
     }
 
     pub fn start(&self) -> Option<&T> {
@@ -74,11 +74,11 @@ impl<'a, T> LinkedList<'a, T> {
         // contains a valid `Node`. This is satisfied by the insertion methods.
         // `.data` does not try to read from uninitialized memory, making this
         // operation safe to execute.
-        Some(unsafe { (start.as_ref()).data })
+        Some(unsafe { &(start.as_ref()).data })
     }
 }
 
-impl<'a, T> Drop for LinkedList<'a, T> {
+impl<T> Drop for LinkedList<T> {
     fn drop(&mut self) {
         if let Some(start) = self.start.take() {
             let mut curr_node = start;
@@ -119,9 +119,9 @@ mod tests {
         let i3 = 15;
 
         let mut list: LinkedList<u8> = LinkedList::new();
-        list.push_end(&i1);
-        list.push_end(&i2);
-        list.push_end(&i3);
+        list.push_end(i1);
+        list.push_end(i2);
+        list.push_end(i3);
 
         let start = list.start();
         let end = list.end();
@@ -136,9 +136,9 @@ mod tests {
         let i3 = 15;
 
         let mut list: LinkedList<u8> = LinkedList::new();
-        list.push_start(&i1);
-        list.push_start(&i2);
-        list.push_start(&i3);
+        list.push_start(i1);
+        list.push_start(i2);
+        list.push_start(i3);
 
         let start = list.start();
         let end = list.end();
