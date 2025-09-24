@@ -47,6 +47,71 @@ impl<T> LinkedList<T> {
         self.end = Some(ptr);
     }
 
+    pub fn pop_end(&mut self) -> Option<T> {
+        self.end
+            .take()
+            // SAFETY:
+            // Since `Some` always contains a valid `Node` pointer,
+            // and the pointer was previously obtained from a `Box`,
+            // it is safe to re-create the `Box` through it's raw pointer
+            // to own and drop it when we're done.
+            //
+            // The possibility of a dangling pointer after the drop is handled
+            // by setting the start and end of the list appropriately, to
+            // prevent accessing the underlying memory in other parts of the
+            // program.
+            .map(|ptr| unsafe { Box::from_raw(ptr) })
+            .map(|b| {
+                match b.prev {
+                    // SAFETY:
+                    // Since `Some` always contains a valid `Node` pointer,
+                    // it is safe to dereference the raw pointer.
+                    Some(ptr) => unsafe {
+                        (*ptr).next = None;
+                        self.end = Some(ptr);
+                    },
+                    None => {
+                        self.start = None;
+                        self.end = None;
+                    }
+                }
+
+                Some(b.data)
+            })?
+    }
+
+    pub fn pop_start(&mut self) -> Option<T> {
+        self.start
+            .take()
+            // SAFETY:
+            // Since `Some` always contains a valid `Node` pointer,
+            // and the pointer was previously obtained from a `Box`,
+            // it is safe to re-create the `Box` through it's raw pointer
+            // to own and drop it when we're done.
+            //
+            // The possibility of a dangling pointer after the drop is handled
+            // by setting the start and end of the list appropriately, to
+            // prevent accessing the underlying memory in other parts of the
+            // program.
+            .map(|ptr| unsafe { Box::from_raw(ptr) })
+            .map(|b| {
+                match b.next {
+                    // SAFETY:
+                    // Since `Some` always contains a valid `Node` pointer,
+                    // it is safe to dereference the raw pointer.
+                    Some(ptr) => unsafe {
+                        (*ptr).prev = None;
+                        self.start = Some(ptr);
+                    },
+                    None => {
+                        self.start = None;
+                        self.end = None;
+                    }
+                }
+                Some(b.data)
+            })?
+    }
+
     pub fn push_start(&mut self, data: T) {
         let node = Box::new(Node {
             data,
@@ -135,6 +200,9 @@ mod tests {
 
         let start = list.start();
         let end = list.end();
+
+        assert!(start.is_some());
+        assert!(end.is_some());
         assert_eq!(start.unwrap(), &i1);
         assert_eq!(end.unwrap(), &i3);
     }
@@ -152,7 +220,60 @@ mod tests {
 
         let start = list.start();
         let end = list.end();
+
+        assert!(start.is_some());
+        assert!(end.is_some());
         assert_eq!(start.unwrap(), &i3);
         assert_eq!(end.unwrap(), &i1);
+    }
+
+    #[test]
+    pub fn should_pop_end_some() {
+        let i1 = 5;
+        let i2 = 10;
+        let i3 = 15;
+
+        let mut list: LinkedList<u8> = LinkedList::new();
+        list.push_end(i1);
+        list.push_end(i2);
+        list.push_end(i3);
+
+        let end = list.pop_end();
+
+        assert!(end.is_some());
+        assert_eq!(end.unwrap(), i3);
+    }
+
+    #[test]
+    pub fn should_pop_end_none() {
+        let mut list: LinkedList<u8> = LinkedList::new();
+        let end = list.pop_end();
+
+        assert!(end.is_none());
+    }
+
+    #[test]
+    pub fn should_pop_start_some() {
+        let i1 = 5;
+        let i2 = 10;
+        let i3 = 15;
+
+        let mut list: LinkedList<u8> = LinkedList::new();
+        list.push_end(i1);
+        list.push_end(i2);
+        list.push_end(i3);
+
+        let end = list.pop_start();
+
+        assert!(end.is_some());
+        assert_eq!(end.unwrap(), i1);
+    }
+
+    #[test]
+    pub fn should_pop_start_none() {
+        let mut list: LinkedList<u8> = LinkedList::new();
+        let end = list.pop_start();
+
+        assert!(end.is_none());
     }
 }
