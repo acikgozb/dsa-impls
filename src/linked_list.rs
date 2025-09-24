@@ -4,6 +4,7 @@ use std::ptr::NonNull;
 struct Node<T> {
     data: T,
     next: Option<*mut Node<T>>,
+    prev: Option<*mut Node<T>>,
 }
 
 #[derive(Default, Debug)]
@@ -24,6 +25,7 @@ impl<T> LinkedList<T> {
         let node = Box::new(Node {
             data,
             next: None,
+            prev: self.end,
         });
 
         let ptr = Box::into_raw(node);
@@ -49,8 +51,15 @@ impl<T> LinkedList<T> {
         let node = Box::new(Node {
             data,
             next: self.start,
+            prev: None,
         });
         let ptr = Box::into_raw(node);
+
+        if let Some(old_start) = self.start {
+            unsafe {
+                (*old_start).prev = Some(ptr);
+            }
+        }
 
         self.start = Some(ptr);
 
