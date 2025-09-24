@@ -3,13 +3,13 @@ use std::ptr::NonNull;
 #[derive(Debug)]
 struct Node<T> {
     data: T,
-    next: Option<NonNull<Node<T>>>,
+    next: Option<*mut Node<T>>,
 }
 
 #[derive(Default, Debug)]
 pub struct LinkedList<T> {
-    start: Option<NonNull<Node<T>>>,
-    end: Option<NonNull<Node<T>>>,
+    start: Option<*mut Node<T>>,
+    end: Option<*mut Node<T>>,
 }
 
 impl<T> LinkedList<T> {
@@ -21,21 +21,24 @@ impl<T> LinkedList<T> {
     }
 
     pub fn push_end(&mut self, data: T) {
-        let node = Box::new(Node { data, next: None });
-        let ptr = NonNull::from(Box::leak(node));
+        let node = Box::new(Node {
+            data,
+            next: None,
+        });
+
+        let ptr = Box::into_raw(node);
 
         if self.start.is_none() {
             self.start = Some(ptr);
         }
 
-        if let Some(mut prev) = self.end.take() {
+        if let Some(prev) = self.end.take() {
             // SAFETY:
             // Since a `Node` is wrapped with `Option`, `Some` always contains
-            // a valid `Node` pointer that can be converted into a reference,
-            // making this operation safe to execute.
+            // a valid `Node` pointer that can be dereferenced as expected. The
+            // insertion/deletion methods guarantee this behavior.
             unsafe {
-                let prev_ptr = prev.as_mut();
-                prev_ptr.next = Some(ptr);
+                (*prev).next = Some(ptr);
             }
         };
 
@@ -47,12 +50,12 @@ impl<T> LinkedList<T> {
             data,
             next: self.start,
         });
-        let new_start = NonNull::from(Box::leak(node));
+        let ptr = Box::into_raw(node);
 
-        self.start = Some(new_start);
+        self.start = Some(ptr);
 
         if self.end.is_none() {
-            self.end = Some(new_start);
+            self.end = Some(ptr);
         }
     }
 
@@ -60,10 +63,10 @@ impl<T> LinkedList<T> {
         let end = self.end?;
         // SAFETY:
         // Since the end `Node` is wrapped with `Option`, `Some` always
-        // contains a valid `Node`.
-        // `.data` does not try to read from uninitialized memory, making this
-        // operation safe to execute.
-        Some(unsafe { &(end.as_ref()).data })
+        // contains a valid `Node`. This is guaranteed by the insertion/deletion
+        // methods.
+        // `.data` does not try to read from uninitialized memory.
+        Some(unsafe { &(*end).data })
     }
 
     pub fn start(&self) -> Option<&T> {
@@ -71,10 +74,10 @@ impl<T> LinkedList<T> {
 
         // SAFETY:
         // Since the start `Node` is wrapped with `Option`, `Some` always
-        // contains a valid `Node`. This is satisfied by the insertion methods.
-        // `.data` does not try to read from uninitialized memory, making this
-        // operation safe to execute.
-        Some(unsafe { &(start.as_ref()).data })
+        // contains a valid `Node`. This is guaranteed by the insertion/deletion
+        // methods.
+        // `.data` does not try to read from uninitialized memory.
+        Some(unsafe { &(*start).data })
     }
 }
 
@@ -83,20 +86,18 @@ impl<T> Drop for LinkedList<T> {
         if let Some(start) = self.start.take() {
             let mut curr_node = start;
             loop {
-                let ptr = curr_node.as_ptr();
-
                 // SAFETY:
                 // Since a `Node` is wrapped with `Option`, `ptr` always points
-                // to a valid, non-null Node instance.
-                // `.next` does not try to read from uninitialied memory,
-                // making this operation safe to execute.
-                let next_node = unsafe { (*ptr).next };
+                // to a valid, non-null Node instance. This is guaranteed by
+                // insertion/deletion methods.
+                // `.next` does not try to read from uninitialied memory.
+                let next_node = unsafe { (*curr_node).next };
 
                 // SAFETY:
                 // The pointer is dropped once and is not used after being
                 // dropped, making this operation safe to execute.
                 unsafe {
-                    drop(Box::from_raw(ptr));
+                    drop(Box::from_raw(curr_node));
                 }
 
                 match next_node {
