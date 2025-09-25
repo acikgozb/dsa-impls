@@ -1,4 +1,4 @@
-use std::ptr::NonNull;
+use std::marker::PhantomData;
 
 #[derive(Debug)]
 struct Node<T> {
@@ -18,6 +18,20 @@ impl<T> LinkedList<T> {
         Self {
             start: None,
             end: None,
+        }
+    }
+
+    pub fn iter(&self) -> Iter<'_, T> {
+        Iter {
+            start: self.start,
+            phantom: PhantomData,
+        }
+    }
+
+    pub fn iter_mut(&mut self) -> IterMut<'_, T> {
+        IterMut {
+            start: self.start,
+            phantom: PhantomData,
         }
     }
 
@@ -121,6 +135,9 @@ impl<T> LinkedList<T> {
         let ptr = Box::into_raw(node);
 
         if let Some(old_start) = self.start {
+            // SAFETY:
+            // Since `Some` always contains a valid `Node` pointer,
+            // it is safe to dereference the raw pointer here.
             unsafe {
                 (*old_start).prev = Some(ptr);
             }
@@ -155,6 +172,16 @@ impl<T> LinkedList<T> {
     }
 }
 
+impl<T> IntoIterator for LinkedList<T> {
+    type Item = T;
+
+    type IntoIter = IntoIter<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIter { list: self }
+    }
+}
+
 impl<T> Drop for LinkedList<T> {
     fn drop(&mut self) {
         if let Some(start) = self.start.take() {
@@ -180,6 +207,72 @@ impl<T> Drop for LinkedList<T> {
                 }
             }
         }
+    }
+}
+
+pub struct Iter<'a, T> {
+    start: Option<*mut Node<T>>,
+    phantom: PhantomData<&'a T>,
+}
+
+impl<'a, T> Iterator for Iter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let curr = self.start?;
+
+        // SAFETY:
+        // - `curr` is a valid raw `Node` pointer if it is `Some`.
+        // This is guaranteed by insertion and deletion methods.
+        // - Since `Node` is allocated on the heap, and the lifetimes are
+        // tied to `LinkedList` through `PhantomData`, it is safe to return a
+        // reference to `.data`.
+        let (data, next) = unsafe {
+            let n = &(*curr);
+            (&n.data, n.next)
+        };
+        self.start = next;
+
+        Some(data)
+    }
+}
+
+pub struct IntoIter<T> {
+    list: LinkedList<T>,
+}
+
+impl<T> Iterator for IntoIter<T> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.list.pop_start()
+    }
+}
+
+pub struct IterMut<'a, T> {
+    start: Option<*mut Node<T>>,
+    phantom: PhantomData<&'a T>,
+}
+
+impl<'a, T> Iterator for IterMut<'a, T> {
+    type Item = &'a mut T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let curr = self.start?;
+
+        // SAFETY:
+        // - `curr` is a valid raw `Node` pointer if it is `Some`.
+        // This is guaranteed by insertion and deletion methods.
+        // - Since `Node` is allocated on the heap, and the lifetimes are
+        // tied to `LinkedList` through `PhantomData`, it is safe to return a
+        // mutable borrow to `.data`.
+        let (data, next) = unsafe {
+            let n = &mut (*curr);
+            (&mut n.data, n.next)
+        };
+
+        self.start = next;
+        Some(data)
     }
 }
 
@@ -275,5 +368,54 @@ mod tests {
         let end = list.pop_start();
 
         assert!(end.is_none());
+    }
+
+    #[test]
+    pub fn should_be_into_iterable() {
+        let items: [u8; 3] = [5, 10, 15];
+
+        let mut list: LinkedList<u8> = LinkedList::new();
+        for expected in items.into_iter() {
+            list.push_end(expected);
+        }
+
+        let mut iter = items.into_iter();
+        for actual in list.into_iter() {
+            assert_eq!(iter.next().unwrap(), actual);
+        }
+    }
+
+    #[test]
+    pub fn should_be_iterable() {
+        let items: [u8; 3] = [5, 10, 15];
+
+        let mut list: LinkedList<u8> = LinkedList::new();
+        for expected in items {
+            list.push_end(expected);
+        }
+
+        let mut iter = items.iter();
+        for actual in list.iter() {
+            assert_eq!(iter.next().unwrap(), actual);
+        }
+    }
+
+    #[test]
+    pub fn should_be_mut_iterable() {
+        let items: [u8; 3] = [5, 10, 15];
+
+        let mut list: LinkedList<u8> = LinkedList::new();
+        for expected in items {
+            list.push_end(expected);
+        }
+
+        for item in list.iter_mut() {
+            *item *= 2;
+        }
+
+        let mut iter = items.iter();
+        for actual in list.iter() {
+            assert_eq!(iter.next().unwrap() * 2, *actual);
+        }
     }
 }
