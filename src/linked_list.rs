@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 
+/// Represents each node of a `LinkedList`.
 #[derive(Debug)]
 struct Node<T> {
     data: T,
@@ -7,6 +8,17 @@ struct Node<T> {
     prev: Option<*mut Node<T>>,
 }
 
+/// Represents a basic doubly linked list.
+///
+/// This structure is not thread-safe.
+///
+/// A `LinkedList` allows insertion and removal of elements
+/// in constant time. However, it does not have random search capabilities of
+/// container structs like `Vec`.
+///
+/// Therefore, prefer using `Vec` or any other container structs for search-
+/// heavy logic.
+/// They do not force sequential search and make better use of CPU cache.
 #[derive(Default, Debug)]
 pub struct LinkedList<T> {
     start: Option<*mut Node<T>>,
@@ -14,6 +26,7 @@ pub struct LinkedList<T> {
 }
 
 impl<T> LinkedList<T> {
+    /// Creates a new `LinkedList`.
     pub fn new() -> Self {
         Self {
             start: None,
@@ -21,6 +34,27 @@ impl<T> LinkedList<T> {
         }
     }
 
+    /// Creates an `Iterator` that can be used to traverse `LinkedList`.
+    /// The provided iterator only yields references to the data from front to
+    /// back.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use dsa_impls::linked_list::LinkedList;
+    ///
+    /// let mut list: LinkedList<u8> = LinkedList::new();
+    /// list.push_end(1);
+    /// list.push_end(2);
+    /// list.push_end(3);
+    ///
+    /// let mut iter = list.iter();
+    ///
+    /// assert_eq!(iter.next(), Some(&1));
+    /// assert_eq!(iter.next(), Some(&2));
+    /// assert_eq!(iter.next(), Some(&3));
+    /// assert_eq!(iter.next(), None);
+    /// ```
     pub fn iter(&self) -> Iter<'_, T> {
         Iter {
             start: self.start,
@@ -28,6 +62,30 @@ impl<T> LinkedList<T> {
         }
     }
 
+    /// Creates an `Iterator` that can be used to traverse `LinkedList`.
+    /// The provided iterator only yields mutable borrows to the data from
+    /// front to back.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use dsa_impls::linked_list::LinkedList;
+    ///
+    /// let mut list: LinkedList<u8> = LinkedList::new();
+    /// list.push_end(1);
+    /// list.push_end(2);
+    /// list.push_end(3);
+    ///
+    /// for item in list.iter_mut() {
+    ///     *item *= 2;
+    /// }
+    ///
+    /// let mut iter = list.iter();
+    /// assert_eq!(iter.next(), Some(&2));
+    /// assert_eq!(iter.next(), Some(&4));
+    /// assert_eq!(iter.next(), Some(&6));
+    /// assert_eq!(iter.next(), None);
+    /// ```
     pub fn iter_mut(&mut self) -> IterMut<'_, T> {
         IterMut {
             start: self.start,
@@ -35,6 +93,21 @@ impl<T> LinkedList<T> {
         }
     }
 
+    /// Add a new element to the end of the `LinkedList`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use dsa_impls::linked_list::LinkedList;
+    ///
+    /// let mut list: LinkedList<u8> = LinkedList::new();
+    /// list.push_end(1);
+    /// list.push_end(2);
+    /// list.push_end(3);
+    ///
+    /// let end = list.end();
+    /// assert_eq!(end, Some(&3));
+    /// ```
     pub fn push_end(&mut self, data: T) {
         let node = Box::new(Node {
             data,
@@ -61,6 +134,24 @@ impl<T> LinkedList<T> {
         self.end = Some(ptr);
     }
 
+    /// Removes an element from the end of the `LinkedList`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use dsa_impls::linked_list::LinkedList;
+    ///
+    /// let mut list: LinkedList<u8> = LinkedList::new();
+    /// list.push_end(1);
+    /// list.push_end(2);
+    /// list.push_end(3);
+    ///
+    /// let popped = list.pop_end();
+    /// let end = list.end();
+    ///
+    /// assert_eq!(popped, Some(3));
+    /// assert_eq!(end, Some(&2));
+    /// ```
     pub fn pop_end(&mut self) -> Option<T> {
         self.end
             .take()
@@ -94,6 +185,24 @@ impl<T> LinkedList<T> {
             })?
     }
 
+    /// Removes an element from the start of the `LinkedList`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use dsa_impls::linked_list::LinkedList;
+    ///
+    /// let mut list: LinkedList<u8> = LinkedList::new();
+    /// list.push_end(1);
+    /// list.push_end(2);
+    /// list.push_end(3);
+    ///
+    /// let popped = list.pop_start();
+    /// let start = list.start();
+    ///
+    /// assert_eq!(popped, Some(1));
+    /// assert_eq!(start, Some(&2));
+    /// ```
     pub fn pop_start(&mut self) -> Option<T> {
         self.start
             .take()
@@ -126,6 +235,21 @@ impl<T> LinkedList<T> {
             })?
     }
 
+    /// Adds a new element to the beginning of the `LinkedList`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use dsa_impls::linked_list::LinkedList;
+    ///
+    /// let mut list: LinkedList<u8> = LinkedList::new();
+    /// list.push_start(1);
+    /// list.push_start(2);
+    /// list.push_start(3);
+    ///
+    /// let start = list.start();
+    /// assert_eq!(start, Some(&3));
+    /// ```
     pub fn push_start(&mut self, data: T) {
         let node = Box::new(Node {
             data,
@@ -150,6 +274,21 @@ impl<T> LinkedList<T> {
         }
     }
 
+    /// Provides a reference to the last item of the `LinkedList`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use dsa_impls::linked_list::LinkedList;
+    ///
+    /// let mut list: LinkedList<u8> = LinkedList::new();
+    /// list.push_end(1);
+    /// list.push_end(2);
+    /// list.push_end(3);
+    ///
+    /// let end = list.end();
+    /// assert_eq!(end, Some(&3));
+    /// ```
     pub fn end(&self) -> Option<&T> {
         let end = self.end?;
         // SAFETY:
@@ -160,6 +299,21 @@ impl<T> LinkedList<T> {
         Some(unsafe { &(*end).data })
     }
 
+    /// Provides a reference to the first item of the `LinkedList`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use dsa_impls::linked_list::LinkedList;
+    ///
+    /// let mut list: LinkedList<u8> = LinkedList::new();
+    /// list.push_end(1);
+    /// list.push_end(2);
+    /// list.push_end(3);
+    ///
+    /// let start = list.start();
+    /// assert_eq!(start, Some(&1));
+    /// ```
     pub fn start(&self) -> Option<&T> {
         let start = self.start?;
 
@@ -210,6 +364,7 @@ impl<T> Drop for LinkedList<T> {
     }
 }
 
+/// `Iter` provides sequential, readonly search on a `LinkedList`.
 pub struct Iter<'a, T> {
     start: Option<*mut Node<T>>,
     phantom: PhantomData<&'a T>,
@@ -237,6 +392,7 @@ impl<'a, T> Iterator for Iter<'a, T> {
     }
 }
 
+/// `IntoIter` provides sequential, owned search on a `LinkedList`.
 pub struct IntoIter<T> {
     list: LinkedList<T>,
 }
@@ -249,6 +405,7 @@ impl<T> Iterator for IntoIter<T> {
     }
 }
 
+/// `IterMut` provides sequential, mutable search on a `LinkedList`.
 pub struct IterMut<'a, T> {
     start: Option<*mut Node<T>>,
     phantom: PhantomData<&'a T>,
